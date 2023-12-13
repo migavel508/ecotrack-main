@@ -11,6 +11,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from flask import json
+from random import randint
 from time import gmtime,time
 from flask_sqlalchemy import SQLAlchemy as _BaseSQLAlchemy
 
@@ -21,8 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://aishwinmigavel:yiogsDCkO06x@ep-black-fire-68996719-pooler.us-east-2.aws.neon.tech/ecotrack?sslmode=require'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:d1tmkSZfaxF0@ep-aged-flower-72694236-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -49,12 +49,18 @@ class User(db.Model):
     phone_no = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     fullname = db.Column(db.String(120), nullable=False)
+    points = db.Column(db.Integer, nullable=False)
+    goal = db.Column(db.Integer, nullable=False)
+
 
 # User-details
 
 class Details(db.Model):
     phone_no = db.Column(db.String(80), unique=True, nullable=False, primary_key = True)
     username = db.Column(db.String(120), nullable=False)
+    address = db.Column(db.String(200), nullable=True)
+    lng = db.Column(db.Float, nullable=True)
+    lat = db.Column(db.Float, nullable=True)
     water_consumer_no = db.Column(db.String(120), nullable=True)
     water_board = db.Column(db.String(10), nullable=True)
     electricity_consumer_no = db.Column(db.String(120), nullable=True)
@@ -74,16 +80,29 @@ class Appliances(db.Model):
 #Billing details
 
 class Billing_details(db.Model):
-    phone_no = db.Column(db.String(80), unique=True, nullable=False,primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
+    phone_no = db.Column(db.String(80), nullable=False)
     water_consumer_no = db.Column(db.String(120), nullable=True)
     electricity_consumer_no = db.Column(db.String(120), nullable=True)
-    electricity_bill = db.Column(db.Integer,nullable=True)
-    electricity_billing_date = db.Column(db.Date,nullable=True)
-    water_bill = db.Column(db.Integer,nullable=True)
-    water_billing_date = db.Column(db.Date,nullable=True)
+    electricity_consumption = db.Column(db.Float,nullable=True)
+    electricity_bill = db.Column(db.Float,nullable=True)
+    water_consumption = db.Column(db.Float,nullable=True)
+    water_bill = db.Column(db.Float,nullable=True)
+    water_billing_date = db.Column(db.String(10),nullable=True)
     water_board = db.Column(db.String(10), nullable=True)
-    electricity_billing_date = db.Column(db.Date,nullable=True)
+    electricity_billing_date = db.Column(db.String(10),nullable=True)
     electricity_board = db.Column(db.String(10), nullable=True)
+
+
+def calculate_electricity_bill(bill):
+    if bill>250 and bill<400:
+        return 450 + (bill-250)*4.5
+    elif bill>400:
+        return 1350 + (bill-450)*6
+    
+def calculate_water_bill(bill):
+    bill=bill/1000
+    return bill*40
 
 
 with app.app_context():
@@ -102,15 +121,33 @@ def register():
         firstname = request.json['firstname']
         lastname = request.json['lastname']
         fullname = firstname + " " + lastname
-        user = User(phone_no=phone_no, password=password, fullname=fullname)
-        user_details = Details(phone_no=phone_no,username=fullname,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,Number_of_people=None)
+        tm = gmtime(time())
+        curr_month="1-"+str(tm[1])+"-"+str(tm[0])
+        prev_month="1-"+str(tm[1]-1)+"-"+str(tm[0])
+        last_month="1-"+str(tm[1]-2)+"-"+str(tm[0])
+        water_curr_month="1-"+str(tm[1]-2)+"-"+str(tm[0])
+        water_prev_month="1-"+str(tm[1]-8)+"-"+str(tm[0])
+        water_last_month="1-"+str(tm[1]-2)+"-"+str(tm[0]-1)
+        econsumption=randint(250,500)
+        econsumption2=econsumption + econsumption*0.05
+        econsumption3=econsumption + econsumption*0.025
+        wconsumption=randint(18000,20000)
+        wconsumption2=wconsumption + wconsumption*0.05
+        wconsumption3=wconsumption + wconsumption*0.025
+        user = User(phone_no=phone_no, password=password, fullname=fullname,points=0,goal=econsumption*0.95)
+        user_details = Details(phone_no=phone_no,username=fullname,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,Number_of_people=None,lat=None,lng=None,address=None)
         appliance_details = Appliances(phone_no=phone_no,Television=None,Air_conditioner=None,Refrigerator=None,Microwave=None,Washing_machine=None)
-        bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=None,water_billing_date=None,water_bill=None,electricity_bill=None)
+        bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=curr_month,water_billing_date=water_curr_month,water_bill=calculate_water_bill(wconsumption),electricity_bill=calculate_electricity_bill(econsumption),electricity_consumption=econsumption,water_consumption=wconsumption)
+        prev_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=prev_month,water_billing_date=water_prev_month,water_bill=calculate_water_bill(wconsumption2),electricity_bill=calculate_electricity_bill(econsumption2),electricity_consumption=econsumption2,water_consumption=wconsumption2)
+        last_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=last_month,water_billing_date=water_last_month,water_bill=calculate_water_bill(wconsumption3),electricity_bill=calculate_electricity_bill(econsumption3),electricity_consumption=econsumption3,water_consumption=wconsumption3)
         db.session.add(user)
         db.session.add(user_details)
         db.session.add(appliance_details)
         db.session.add(bill_details)
+        db.session.add(prev_bill_details)
+        db.session.add(last_bill_details)
         db.session.commit()
+
         return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
     return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
 
@@ -160,11 +197,13 @@ def updateuserdetails():
             user_to_update.electricity_consumer_no = electricity_consumer_no
             user_to_update.electricity_board = electricity_board
             user_to_update.Number_of_people = Number_of_people
-            details_to_update = Billing_details.query.get_or_404(phone_no)          
-            details_to_update.water_board = water_board
-            details_to_update.water_consumer_no = water_consumer_no
-            details_to_update.electricity_consumer_no = electricity_consumer_no
-            details_to_update.electricity_board = electricity_board
+            details_to_update = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
+            print(details_to_update)
+            for i in range(3):        
+                details_to_update[i].water_board = water_board
+                details_to_update[i].water_consumer_no = water_consumer_no
+                details_to_update[i].electricity_consumer_no = electricity_consumer_no
+                details_to_update[i].electricity_board = electricity_board
             db.session.commit()
             return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
         else:
