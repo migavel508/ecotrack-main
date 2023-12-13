@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:d1tmkSZfaxF0@ep-aged-flower-72694236-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:vGCEp16LQHdm@ep-shrill-dust-98123906-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -76,6 +76,11 @@ class Appliances(db.Model):
     Microwave = db.Column(db.Integer,nullable=True)
     Washing_machine = db.Column(db.Integer,nullable=True)
     Air_conditioner = db.Column(db.Integer,nullable=True)
+    Iron_box = db.Column(db.Integer,nullable=True)
+    Heater = db.Column(db.Integer,nullable=True)
+    Fans = db.Column(db.Integer,nullable=True)
+    Lights = db.Column(db.Integer,nullable=True)
+    
 
 #Billing details
 
@@ -136,7 +141,7 @@ def register():
         wconsumption3=wconsumption + wconsumption*0.025
         user = User(phone_no=phone_no, password=password, fullname=fullname,points=0,goal=econsumption*0.95)
         user_details = Details(phone_no=phone_no,username=fullname,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,Number_of_people=None,lat=None,lng=None,address=None)
-        appliance_details = Appliances(phone_no=phone_no,Television=None,Air_conditioner=None,Refrigerator=None,Microwave=None,Washing_machine=None)
+        appliance_details = Appliances(phone_no=phone_no,Television=None,Air_conditioner=None,Refrigerator=None,Microwave=None,Washing_machine=None,Lights=None,Fans=None,Iron_box=None,Heater=None)
         bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=curr_month,water_billing_date=water_curr_month,water_bill=calculate_water_bill(wconsumption),electricity_bill=calculate_electricity_bill(econsumption),electricity_consumption=econsumption,water_consumption=wconsumption)
         prev_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=prev_month,water_billing_date=water_prev_month,water_bill=calculate_water_bill(wconsumption2),electricity_bill=calculate_electricity_bill(econsumption2),electricity_consumption=econsumption2,water_consumption=wconsumption2)
         last_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=last_month,water_billing_date=water_last_month,water_bill=calculate_water_bill(wconsumption3),electricity_bill=calculate_electricity_bill(econsumption3),electricity_consumption=econsumption3,water_consumption=wconsumption3)
@@ -169,15 +174,6 @@ def login():
 def logout():
     session.pop('phone_no', None)
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
-
-@app.route("/userdetails", methods=['GET'])
-def userdetails():
-    if 'phone_no' in session:
-        user = Details.query.filter_by(phone_no=session['phone_no']).first()
-        return json.dumps({'success':True, "phone_no":user.phone_no,"fullname":user.fullname,"electricity_consumer_no":user.electricity_consumer_no,"water_consumer_no":user.water_consumer_no}), 200, {'ContentType':'application/json'}
-    else:
-        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
-
 
 # route for adding/updating user details
 
@@ -218,19 +214,67 @@ def updateapplaincedetails():
             Refrigerator = request.json['Refrigerator']
             Washing_machine = request.json['Washing_machine']
             Microwave = request.json['Microwave']
+            Fans = request.json['Fans']
+            Lights = request.json['Lights']
+            Heater = request.json['Heater']
+            Iron_box = request.json['Iron_box']
             phone_no=session['phone_no']
             appliance_to_update = Appliances.query.get_or_404(phone_no)          
             appliance_to_update.Television = Television
             appliance_to_update.Air_conditioner = Air_conditioner
             appliance_to_update.Refrigerator = Refrigerator
             appliance_to_update.Washing_machine = Washing_machine
+            appliance_to_update.Fans = Fans
+            appliance_to_update.Lights = Lights
+            appliance_to_update.Iron_box = Iron_box
+            appliance_to_update.Heater = Heater
             appliance_to_update.Microwave = Microwave
+            print(appliance_to_update)         
+
             db.session.commit()
             return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
         else:
             return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
 
 
+@app.route("/goal", methods=['GET','POST'])
+def goal():
+    if 'phone_no' in session:
+        if request.method == 'POST':
+            goal = request.json['goal']
+            goal_to_update = User.query.filter_by(phone_no=session['phone_no']).first()        
+            goal_to_update.goal = goal
+            db.session.commit()
+            return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
+        else:
+            return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+
+@app.route("/userdetails", methods=['GET'])
+def userdetails():
+    if 'phone_no' in session:
+        user = Details.query.filter_by(phone_no=session['phone_no']).first()
+        appl = Appliances.query.filter_by(phone_no=session['phone_no']).first()
+        return json.dumps({"Applainces":{"Lights":appl.Lights,"Fans":appl.Fans,"Heater":appl.Heater,"Iron_box":appl.Iron_box,"Television":appl.Television,"Washing_machine":appl.Washing_machine,"Ac":appl.Air_conditioner,"Microwave":appl.Microwave,"Refrigerator":appl.Refrigerator},"details":{"phone_no":user.phone_no,"fullname":user.username,"address":user.address,"electricity_consumer_no":user.electricity_consumer_no,"water_consumer_no":user.water_consumer_no,"lat":user.lat,"lng":user.lng,"electricity_board":user.electricity_board,"water_board":user.water_board,"Number_of_people":user.Number_of_people}}), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+
+
+@app.route("/billdetails", methods=['GET'])
+def billdetails():
+    if 'phone_no' in session:
+        user = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
+        return json.dumps([{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[0].water_billing_date,"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"water_bill":user[0].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].water_billing_date,"electricity_date":user[2].electricity_billing_date,"electricity_bill":user[2].electricity_bill,"water_bill":user[2].water_bill,"water_payment_status":False,"electricity_payment_status":True}]), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+
+
+@app.route("/electricitybilldetails", methods=['GET'])
+def electricitybilldetails():
+    if 'phone_no' in session:
+        user = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
+        return json.dumps([{"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"electricity_consumption":user[0].electricity_consumption,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].water_billing_date,"electricity_date":user[2].electricity_billing_date,"electricity_bill":user[2].electricity_bill,"water_bill":user[2].water_bill,"water_payment_status":False,"electricity_payment_status":True}]), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
 
 
 if __name__ == '__main__':
