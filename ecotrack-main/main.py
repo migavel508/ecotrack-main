@@ -165,7 +165,7 @@ def login():
     if request.method == 'POST':
         phone_no = request.json['phone_no']
         password = request.json['password']
-        user = User.query.filter_by(phone_no=phone_no, password=password)
+        user = User.query.filter_by(phone_no=phone_no, password=password).first()
         if user is not None:
             session['phone_no'] = phone_no
             return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
