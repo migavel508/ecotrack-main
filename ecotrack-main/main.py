@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:vGCEp16LQHdm@ep-shrill-dust-98123906-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:m1FqTGD5pWyC@ep-black-grass-60503862-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -49,8 +49,10 @@ class User(db.Model):
     phone_no = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     fullname = db.Column(db.String(120), nullable=False)
-    points = db.Column(db.Integer, nullable=False)
+    achievement_points = db.Column(db.Integer, nullable=False)
     goal = db.Column(db.Integer, nullable=False)
+    contribution_points = db.Column(db.Integer, nullable=False)
+    redeemed_points = db.Column(db.Integer, nullable=False)
 
 
 # User-details
@@ -100,7 +102,7 @@ class Billing_details(db.Model):
 
 
 def calculate_electricity_bill(bill):
-    if bill>250 and bill<400:
+    if bill>220 and bill<400:
         return 450 + (bill-250)*4.5
     elif bill>400:
         return 1350 + (bill-450)*6
@@ -122,6 +124,8 @@ def home():
 def register():
     if request.method == 'POST':
         phone_no = request.json['phone_no']
+        if User.query.filter_by(phone_no=phone_no).first() is not None:
+            return json.dumps({'success':"Phone number already exists!"}), 401, {'ContentType':'application/json'}
         password = request.json['password']
         firstname = request.json['firstname']
         lastname = request.json['lastname']
@@ -139,7 +143,7 @@ def register():
         wconsumption=randint(18000,20000)
         wconsumption2=wconsumption + wconsumption*0.05
         wconsumption3=wconsumption + wconsumption*0.025
-        user = User(phone_no=phone_no, password=password, fullname=fullname,points=0,goal=econsumption*0.95)
+        user = User(phone_no=phone_no, password=password, fullname=fullname,achievement_points=0,goal=econsumption*0.95,redeemed_points=0,contribution_points=0)
         user_details = Details(phone_no=phone_no,username=fullname,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,Number_of_people=None,lat=None,lng=None,address=None)
         appliance_details = Appliances(phone_no=phone_no,Television=None,Air_conditioner=None,Refrigerator=None,Microwave=None,Washing_machine=None,Lights=None,Fans=None,Iron_box=None,Heater=None)
         bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=curr_month,water_billing_date=water_curr_month,water_bill=calculate_water_bill(wconsumption),electricity_bill=calculate_electricity_bill(econsumption),electricity_consumption=econsumption,water_consumption=wconsumption)
@@ -263,19 +267,46 @@ def userdetails():
 def billdetails():
     if 'phone_no' in session:
         user = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
-        return json.dumps([{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[0].water_billing_date,"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"water_bill":user[0].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].water_billing_date,"electricity_date":user[2].electricity_billing_date,"electricity_bill":user[2].electricity_bill,"water_bill":user[2].water_bill,"water_payment_status":False,"electricity_payment_status":True}]), 200, {'ContentType':'application/json'}
+        return json.dumps([{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[0].water_billing_date,"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"water_bill":user[0].water_bill,"electricity_consumption":user[0].electricity_consumption,"water_consumption":user[0].water_consumption,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"electricity_consumption":user[1].electricity_consumption,"water_consumption":user[1].water_consumption,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].water_billing_date,"electricity_date":user[2].electricity_billing_date,"electricity_bill":user[2].electricity_bill,"water_bill":user[2].water_bill,"electricity_consumption":user[2].electricity_consumption,"water_consumption":user[2].water_consumption,"water_payment_status":False,"electricity_payment_status":True}]), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
 
 
-@app.route("/electricitybilldetails", methods=['GET'])
-def electricitybilldetails():
+@app.route("/electricitybillcomparison", methods=['GET'])
+def electricitybillcomparison():
     if 'phone_no' in session:
         user = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
-        return json.dumps([{"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"electricity_consumption":user[0].electricity_consumption,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].water_billing_date,"electricity_date":user[2].electricity_billing_date,"electricity_bill":user[2].electricity_bill,"water_bill":user[2].water_bill,"water_payment_status":False,"electricity_payment_status":True}]), 200, {'ContentType':'application/json'}
+        comp = user[0].electricity_consumption-user[1].electricity_consumption
+        return json.dumps({"electricity_date_1":user[0].electricity_billing_date,"electricity_bill_1":user[0].electricity_bill,"electricity_consumption_1":user[0].electricity_consumption,"electricity_date_2":user[1].electricity_billing_date,"electricity_bill_2":user[1].electricity_bill,"electricity_consumption_2":user[1].electricity_consumption,"electricity_consumption_comparison":comp,"electricity_comparison_average":((comp/user[1].electricity_consumption)*100)}), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+
+@app.route("/waterbillcomparison", methods=['GET'])
+def waterbillcomparison():
+    if 'phone_no' in session:
+        user = Billing_details.query.filter_by(phone_no=session['phone_no']).all()
+        comp = user[0].water_consumption-user[1].water_consumption
+        return json.dumps({"water_date_1":user[0].water_billing_date,"water_bill_1":user[0].water_bill,"water_consumption_1":user[0].water_consumption,"water_date_2":user[1].water_billing_date,"water_bill_2":user[1].water_bill,"water_consumption_2":user[1].water_consumption,"water_consumption_comparison":comp,"water_comparison_average":((comp/user[1].water_consumption)*100)}), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
 
+
+@app.route("/pointsdetails", methods=['GET'])
+def pointsdetails():
+    if 'phone_no' in session:
+        user = User.query.filter_by(phone_no=session['phone_no']).first()
+        return json.dumps({"Achievement_points":user.achievement_points,"Redeemed_points":user.redeemed_points,"Contributed_points":user.contribution_points,}), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+
+'''@app.route("/dailywater", methods=['GET'])
+def dailywater():
+    if 'phone_no' in session:
+        return json.dumps([{"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"electricity_consumption":user[0].electricity_consumption,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].wat), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}'''
 
 if __name__ == '__main__':
     app.run(debug=True)
