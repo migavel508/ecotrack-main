@@ -316,7 +316,14 @@ def pointsdetails():
         return json.dumps({"Achievement_points":user.achievement_points,"Redeemed_points":user.redeemed_points,"Contributed_points":user.contribution_points,}), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
-    
+
+@app.route("/goaldetails", methods=['GET'])
+def goaldetails():
+    if 'phone_no' in session:
+        entries = User.query.filter_by(phone_no=session['phone_no']).first()
+        return json.dumps({"goal":entries.goal}), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}    
 
 @app.route("/leaderdetails", methods=['GET'])
 def leaderdetails():
@@ -342,7 +349,9 @@ def hourlydetails():
         return json.dumps(details), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+
     
+
 
 if __name__ == '__main__':
     app.run(debug=True)
