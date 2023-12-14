@@ -301,6 +301,7 @@ def pointsdetails():
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
     
 
+<<<<<<< HEAD
 '''@app.route("/dailywater", methods=['GET'])
 def dailywater():
     if 'phone_no' in session:
@@ -310,3 +311,35 @@ def dailywater():
 
 if __name__ == '__main__':
     app.run(debug=True)
+=======
+@app.route("/leaderdetails", methods=['GET'])
+def leaderdetails():
+    if 'phone_no' in session:
+        details=[]
+        user = User.query.all()
+        for i in user:
+            consumption = Billing_details.query.filter_by(phone_no=i.phone_no).first()
+            each_entry = {"phone_no":i.phone_no,"username":i.fullname,"achievement_points":i.achievement_points,"water_consumption":consumption.water_consumption,"electricity_consumption":consumption.electricity_consumption}
+            details.append(each_entry)
+        return json.dumps(details), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+@app.route("/hourlydetails", methods=['GET'])
+def hourlydetails():
+    if 'phone_no' in session:
+        details=[]
+        entries = Hourly_entries.query.filter_by(phone_no=session['phone_no']).all()
+        for i in entries:
+            each_entry = {"water_consumption_morning":i.water_consumption_morning,"water_consumption_afternoon":i.water_consumption_afternoon,"electricity_consumption_morning":i.electricity_consumption_morning,"electricity_consumption_afternoon":i.electricity_consumption_afternoon,"date":i.date}
+            details.append(each_entry)
+        return json.dumps(details), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+  
+>>>>>>> c507fb51b576557c13f46960d934024a641948d9
