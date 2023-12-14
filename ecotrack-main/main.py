@@ -344,13 +344,7 @@ def hourlydetails():
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
     
 
-'''@app.route("/dailywater", methods=['GET'])
-def dailywater():
-    if 'phone_no' in session:
-        return json.dumps([{"electricity_date":user[0].electricity_billing_date,"electricity_bill":user[0].electricity_bill,"electricity_consumption":user[0].electricity_consumption,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[1].water_billing_date,"electricity_date":user[1].electricity_billing_date,"electricity_bill":user[1].electricity_bill,"water_bill":user[1].water_bill,"water_payment_status":False,"electricity_payment_status":True},{"electricity_consumer_no":user[0].electricity_consumer_no,"water_consumer_no":user[0].water_consumer_no,"electricity_board":user[0].electricity_board,"water_board":user[0].water_board,"water_date":user[2].wat), 200, {'ContentType':'application/json'}
-    else:
-        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}'''
-
 if __name__ == '__main__':
     app.run(debug=True)
+
   
