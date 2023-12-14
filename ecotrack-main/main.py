@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:m1FqTGD5pWyC@ep-black-grass-60503862-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:V7WEnoJAtfk9@ep-twilight-mode-70634399-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -100,6 +100,16 @@ class Billing_details(db.Model):
     electricity_billing_date = db.Column(db.String(10),nullable=True)
     electricity_board = db.Column(db.String(10), nullable=True)
 
+class Hourly_entries(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phone_no = db.Column(db.String(80), nullable=False)
+    water_consumption_morning = db.Column(db.Float,nullable=True)
+    water_consumption_afternoon = db.Column(db.Float,nullable=True)
+    electricity_consumption_morning = db.Column(db.Float,nullable=True)
+    electricity_consumption_afternoon = db.Column(db.Float,nullable=True)
+    date = db.Column(db.String(10),nullable=True)
+
+
 
 def calculate_electricity_bill(bill):
     if bill>220 and bill<400:
@@ -112,8 +122,11 @@ def calculate_water_bill(bill):
     return bill*40
 
 
+
+
 with app.app_context():
     db.create_all()
+
 
 @app.route('/',methods=['POST','GET'])
 def home():
@@ -149,6 +162,10 @@ def register():
         bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=curr_month,water_billing_date=water_curr_month,water_bill=calculate_water_bill(wconsumption),electricity_bill=calculate_electricity_bill(econsumption),electricity_consumption=econsumption,water_consumption=wconsumption)
         prev_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=prev_month,water_billing_date=water_prev_month,water_bill=calculate_water_bill(wconsumption2),electricity_bill=calculate_electricity_bill(econsumption2),electricity_consumption=econsumption2,water_consumption=wconsumption2)
         last_bill_details = Billing_details(phone_no=phone_no,water_consumer_no=None, water_board=None,electricity_consumer_no=None,electricity_board=None,electricity_billing_date=last_month,water_billing_date=water_last_month,water_bill=calculate_water_bill(wconsumption3),electricity_bill=calculate_electricity_bill(econsumption3),electricity_consumption=econsumption3,water_consumption=wconsumption3)
+        for i in range(7):
+            econsumption=randint(250,500)
+            hourly_update = Hourly_entries(phone_no=phone_no,water_consumption_morning = econsumption/2,water_consumption_afternoon = econsumption/2-15,electricity_consumption_morning = econsumption/40,electricity_consumption_afternoon = econsumption/30,date=str(tm[2]-i)+"-"+str(tm[1])+"-"+str(tm[0]))
+            db.session.add(hourly_update)
         db.session.add(user)
         db.session.add(user_details)
         db.session.add(appliance_details)
@@ -301,6 +318,32 @@ def pointsdetails():
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
     
 
+@app.route("/leaderdetails", methods=['GET'])
+def leaderdetails():
+    if 'phone_no' in session:
+        details=[]
+        user = User.query.all()
+        for i in user:
+            consumption = Billing_details.query.filter_by(phone_no=i.phone_no).first()
+            each_entry = {"phone_no":i.phone_no,"username":i.fullname,"achievement_points":i.achievement_points,"water_consumption":consumption.water_consumption,"electricity_consumption":consumption.electricity_consumption}
+            details.append(each_entry)
+        return json.dumps(details), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+@app.route("/hourlydetails", methods=['GET'])
+def hourlydetails():
+    if 'phone_no' in session:
+        details=[]
+        entries = Hourly_entries.query.filter_by(phone_no=session['phone_no']).all()
+        for i in entries:
+            each_entry = {"water_consumption_morning":i.water_consumption_morning,"water_consumption_afternoon":i.water_consumption_afternoon,"electricity_consumption_morning":i.electricity_consumption_morning,"electricity_consumption_afternoon":i.electricity_consumption_afternoon,"date":i.date}
+            details.append(each_entry)
+        return json.dumps(details), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+    
+
 '''@app.route("/dailywater", methods=['GET'])
 def dailywater():
     if 'phone_no' in session:
@@ -310,3 +353,4 @@ def dailywater():
 
 if __name__ == '__main__':
     app.run(debug=True)
+  
