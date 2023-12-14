@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://aishwinmigavel:yL7XJGTpH5ig@ep-black-fire-68996719-pooler.us-east-2.aws.neon.tech/eco_track?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:V7WEnoJAtfk9@ep-twilight-mode-70634399-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -299,7 +299,14 @@ def pointsdetails():
         return json.dumps({"Achievement_points":user.achievement_points,"Redeemed_points":user.redeemed_points,"Contributed_points":user.contribution_points,}), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
-    
+
+@app.route("/goaldetails", methods=['GET'])
+def goaldetails():
+    if 'phone_no' in session:
+        entries = User.query.filter_by(phone_no=session['phone_no']).first()
+        return json.dumps({"goal":entries.goal}), 200, {'ContentType':'application/json'}
+    else:
+        return json.dumps({'success':False}), 401, {'ContentType':'application/json'}    
 
 <<<<<<< HEAD
 '''@app.route("/dailywater", methods=['GET'])
@@ -336,7 +343,9 @@ def hourlydetails():
         return json.dumps(details), 200, {'ContentType':'application/json'}
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}
+
     
+
 
 if __name__ == '__main__':
     app.run(debug=True)
