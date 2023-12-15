@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 #database configuration
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://sanjuwings04:Dy8UFJzOPnR7@ep-white-pond-24387827.us-east-2.aws.neon.tech/ecotrack?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://adithya14255:V7WEnoJAtfk9@ep-twilight-mode-70634399-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 # class for database preperation
 
 class SQLAlchemy(_BaseSQLAlchemy):
@@ -448,8 +448,6 @@ def goaldetails():
     else:
         return json.dumps({'success':False}), 401, {'ContentType':'application/json'}    
 
-# To get leaderboard details
-
 @app.route("/leaderdetails", methods=['GET'])
 def leaderdetails():
     if 'phone_no' in session:
@@ -533,3 +531,5 @@ def waterbillcomparison():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+  
